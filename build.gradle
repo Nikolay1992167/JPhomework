@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+    id "io.freefair.lombok" version "8.4"
+}
+
+group = 'by.clevertec'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    junitVersion = '5.9.2'
+    assertjVersion = '3.24.2'
+
+}
+
+dependencies {
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation ("org.assertj:assertj-core:${assertjVersion}")
+}
+
+test {
+    useJUnitPlatform()
+}
