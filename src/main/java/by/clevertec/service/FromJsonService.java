@@ -69,7 +69,7 @@ public class FromJsonService {
     }
 
     private Object getNewInstanceOfConstructor(Class<?> clazz) {
-        Object object = null;
+        Object object;
         try {
             Constructor<?> constructor = clazz.getDeclaredConstructor();
             constructor.setAccessible(true);
