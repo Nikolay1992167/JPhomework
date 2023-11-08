@@ -26,4 +26,8 @@ public class PersonTestData {
     private boolean isExistToday = PERSON_IS_EXIST_TODAY;
     @Builder.Default
     private Status status = PERSON_STATUS;
+
+    public Person buildPerson(){
+        return new Person(id, firstname, lastname, amount, isExistToday, status);
+    }
 }

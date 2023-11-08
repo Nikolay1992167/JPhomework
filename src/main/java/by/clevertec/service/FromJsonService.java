@@ -1,6 +1,6 @@
 package by.clevertec.service;
 
-import by.clevertec.exception.JsonException;
+import by.clevertec.exception.CreateObjectException;
 import by.clevertec.exception.NotFoundException;
 
 import java.lang.reflect.Constructor;
@@ -9,6 +9,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,6 +20,7 @@ import java.util.stream.Stream;
 public class FromJsonService {
 
     public Object toObject(String json, Class<?> clazz) {
+
         Map<String, String> jsonMap = executeMapOfFieldsNameAndValue(json);
         Object object = getNewInstanceOfConstructor(clazz);
 
@@ -27,7 +30,6 @@ public class FromJsonService {
                     try {
                         Field declaredField = clazz.getDeclaredField(entry.getKey());
                         Object parsedObject = getParsedObject(entry.getValue(), declaredField);
-
                         declaredField.setAccessible(true);
                         declaredField.set(object, parsedObject);
                     } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -36,8 +38,7 @@ public class FromJsonService {
                     return object;
                 })
                 .reduce((o, o2) -> o2)
-                .orElseThrow(() -> new JsonException("Произошла ошибка формирования объекта!"));
-        System.out.printf("toObject%n%s", finalObject);
+                .orElseThrow(() -> new CreateObjectException("Произошла ошибка формирования объекта!"));
         return finalObject;
     }
 
@@ -57,6 +58,7 @@ public class FromJsonService {
     }
 
     private List<String> getParsedJsonByPattern(String json) {
+
         List<String> keyValueList = new ArrayList<>();
         Pattern pattern = Pattern
                 .compile("((?=\\[)\\[[^]]*]|(?=\\{)\\{[^}]*}|\"[^\"]*\"|(?=\\d)\\d*.\\d*|(?=\\w)\\w*)" +
@@ -76,12 +78,13 @@ public class FromJsonService {
             object = constructor.newInstance();
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException e) {
-            throw new JsonException("Ошибка при обработке JSON!");
+            throw new CreateObjectException("Ошибка при инициализации объекта!");
         }
         return object;
     }
 
     private Object getParsedObject(String value, Field declaredField) {
+
         Class<?> type = declaredField.getType();
         if (type.getSimpleName().startsWith("boolean") || type.getName().startsWith("java.lang.Boolean")) {
             return Boolean.valueOf(value);
@@ -113,6 +116,12 @@ public class FromJsonService {
                         .toArray();
             }
             return objects;
+        } else if (type.equals(UUID.class)) {
+            return getParsedUUID(value);
+        } else if (type.equals(LocalDate.class)) {
+            return getParsedLocalDate(value);
+        } else if (type.equals(OffsetDateTime.class)) {
+            return getParsedOffsetDateTime(value);
         } else {
             return toObject(value, type);
         }
@@ -131,6 +140,18 @@ public class FromJsonService {
         };
     }
 
+    private UUID getParsedUUID(String value) {
+        return UUID.fromString(value);
+    }
+
+    private LocalDate getParsedLocalDate(String value) {
+        return LocalDate.parse(value);
+    }
+
+    private OffsetDateTime getParsedOffsetDateTime(String value){
+        return OffsetDateTime.parse(value);
+    }
+
     private LinkedHashMap<Object, String> getParsedMap(String value, Field declaredField) {
         return value.lines()
                 .map(s -> s.replace("{", ""))
@@ -147,6 +168,7 @@ public class FromJsonService {
     }
 
     private Collection<Object> getParsedCollection(String value, Field declaredField) {
+
         Class<?> type = declaredField.getType();
         if (type.getName().startsWith("java.util.List")) {
             return getParsedCollectionStream(value, declaredField)
@@ -168,6 +190,7 @@ public class FromJsonService {
     }
 
     private Object getParsedGeneric(Field declaredField, String s) {
+
         if (declaredField.getGenericType() instanceof ParameterizedType type) {
             Class<?> generic = (Class<?>) type.getActualTypeArguments()[0];
             if (Number.class.isAssignableFrom(generic)) {
@@ -179,9 +202,17 @@ public class FromJsonService {
         return s;
     }
 
-    private Enum getParsedEnum(String value, Field declaredField) {
-        Class<? extends Enum> enumClass = (Class<? extends Enum>) declaredField.getType();
-        return Enum.valueOf(enumClass, value);
-    }
+    private Enum<?> getParsedEnum(String value, Field declaredField) {
 
+        Class<?> enumClass = declaredField.getType();
+        if (enumClass.isEnum()) {
+            Object[] enumValues = enumClass.getEnumConstants();
+            for (Object enumValue : enumValues) {
+                if (((Enum<?>) enumValue).name().equals(value)) {
+                    return (Enum<?>) enumValue;
+                }
+            }
+        }
+        return null;
+    }
 }

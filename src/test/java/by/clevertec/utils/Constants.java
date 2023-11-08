@@ -27,7 +27,7 @@ public class Constants {
     public static final LocalDate AUCTION_DATE_EVEN = LocalDate.of(2023, 11, 6);
     public static final List<Car> FIRST_LIST_OF_CAR = List.of(
             new Car(
-                    UUID.fromString("299bc76e-f4c4-4fed-9aa3-d4a9ff583be2"),
+                    UUID.fromString("003387b9-4390-49bc-a116-9f5da24fe8ef"),
                     "Hyndai",
                     "i30",
                     LocalDate.of(2023, 2, 14),
@@ -110,7 +110,7 @@ public class Constants {
     public static final boolean PERSON_IS_EXIST_TODAY = true;
     public static final Status PERSON_STATUS = Status.BUYER;
     public static final UUID TRANSACTION_ID = UUID.fromString("a81665e4-f798-4af5-a131-3b9cffcd33b8");
-    public static final OffsetDateTime TRANSACTION_CREATE_DATE = OffsetDateTime.of(2023, 11, 07, 0, 35, 30, 4, ZoneOffset.of("+03:00"));
+    public static final OffsetDateTime TRANSACTION_CREATE_DATE = OffsetDateTime.of(2023, 11, 7, 0, 35, 30, 4, ZoneOffset.of("+03:00"));
     public static final Person TRANSACTION_PERSON = AUCTION_PEOPLE.stream()
             .findFirst().get();
     public static final Car[] TRANSACTION_CARS = new Car[]{
@@ -120,4 +120,5 @@ public class Constants {
     public static final Map<String, Car[]> MAP_OF_CARS = Map.of(
             "Germany", TRANSACTION_CARS
     );
+    public static final String TEST_JSON_LINE = "{\"id\":\"c98b79e8-7838-41f9-a420-fa7c9dc0961e\",\"brand\":\"Toyota\",\"model\":\"RAV4\",\"dateProduction\":\"2023-12-15\",\"type\":\"WAGON\",\"price\":12000.0}";
 }

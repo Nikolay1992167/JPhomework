@@ -1,6 +1,7 @@
 package by.clevertec.utils;
 
 import by.clevertec.enams.Type;
+import by.clevertec.entity.Car;
 import lombok.Builder;
 import lombok.Data;
 
@@ -25,4 +26,8 @@ public class CarTestData {
     private Type type = CAR_TYPE;
     @Builder.Default
     private double price = CAR_PRICE;
+
+    public Car buildCar() {
+        return new Car(id, brand, model, dateProduction, type, price);
+    }
 }

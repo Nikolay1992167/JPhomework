@@ -1,5 +1,6 @@
 package by.clevertec.utils;
 
+import by.clevertec.entity.Auction;
 import by.clevertec.entity.Car;
 import by.clevertec.entity.Person;
 import lombok.Builder;
@@ -31,4 +32,8 @@ public class AuctionTestData {
     private List<Map<Integer, Car>> listMapOfCar = LIST_MAP_OF_CAR;
     @Builder.Default
     private Map<Integer, Map<String, Car>> mapForBrochure = MAP_FOR_BROSHURE;
+
+    public Auction buildAuction(){
+        return new Auction(id, name, dateEvent, cars, prices, people, mapListOfCar, listMapOfCar, mapForBrochure);
+    }
 }

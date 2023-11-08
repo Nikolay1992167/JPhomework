@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 public class ToJsonService {
 
     public String toJson(Object object) {
+
         Field[] declaredFields = object.getClass().getDeclaredFields();
         Map<String, Object> fieldMap = executeMapOfFieldsNameAndValue(object, declaredFields);
 
@@ -18,7 +19,6 @@ public class ToJsonService {
                 .stream()
                 .map(entry -> {
                     StringBuilder jsonBuilder = new StringBuilder();
-
                     if (entry.getValue() instanceof Number
                             || entry.getValue() instanceof Boolean
                             || "null".equals(entry.getValue())) {
@@ -28,20 +28,15 @@ public class ToJsonService {
                     } else if (entry.getValue() instanceof Map<?, ?> map) {
                         return jsonBuilder.append("\"%s\":{%s},".formatted(entry.getKey(), mapToJson(map)));
                     } else if (entry.getValue().getClass().isArray()) {
-                        return jsonBuilder.append("\"%s\":[%s],".formatted(entry.getKey(),
-                                arrayToJson(entry.getValue())));
+                        return jsonBuilder.append("\"%s\":[%s],".formatted(entry.getKey(), arrayToJson(entry.getValue())));
                     } else if (!entry.getValue().getClass().getTypeName().startsWith("java")
                             && !(entry.getValue() instanceof Enum)) {
                         return jsonBuilder.append("\"%s\":%s,".formatted(entry.getKey(), toJson(entry.getValue())));
                     }
-
                     return jsonBuilder.append("\"%s\":\"%s\",".formatted(entry.getKey(), entry.getValue()));
                 })
                 .collect(Collectors.joining("", "{", "}"));
-
-        String finalJson = removeLastComma(json);
-        System.out.printf("toJson:\n%s\n", finalJson);
-        return finalJson;
+        return removeLastComma(json);
     }
 
     private Map<String, Object> executeMapOfFieldsNameAndValue(Object object, Field[] declaredFields) {
@@ -49,7 +44,7 @@ public class ToJsonService {
                 .collect(Collectors.toMap(
                         Field::getName,
                         field -> {
-                            Object value = new Object();
+                            Object value;
                             try {
                                 field.setAccessible(true);
                                 value = field.get(object);
@@ -101,13 +96,13 @@ public class ToJsonService {
     }
 
     private String arrayToJson(Object value) {
+
         int length = Array.getLength(value);
         Object[] objects = new Object[length];
         for (int i = 0; i < length; i++) {
             Object o = Array.get(value, i);
             objects[i] = o;
         }
-
         return Arrays.stream(objects)
                 .map(o -> {
                     if (isObjectInstanceOfStringOrNumberOrBooleanOrEnum(o)) {
@@ -131,5 +126,4 @@ public class ToJsonService {
     private String removeLastComma(String json) {
         return new StringBuilder(json).replace(json.length() - 2, json.length() - 1, "").toString();
     }
-
 }

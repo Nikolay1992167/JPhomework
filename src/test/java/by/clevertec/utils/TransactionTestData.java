@@ -2,6 +2,7 @@ package by.clevertec.utils;
 
 import by.clevertec.entity.Car;
 import by.clevertec.entity.Person;
+import by.clevertec.entity.Transaction;
 import lombok.Builder;
 import lombok.Data;
 
@@ -23,5 +24,10 @@ public class TransactionTestData {
     private Person person = TRANSACTION_PERSON;
     @Builder.Default
     private Car[] cars = TRANSACTION_CARS;
+    @Builder.Default
     private Map<String, Car[]> mapOfCars = MAP_OF_CARS;
+
+    public Transaction buildTransaction(){
+        return new Transaction(id, createDate, person, cars, mapOfCars);
+    }
 }
