@@ -12,7 +12,7 @@ import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.regex.Matcher;
+import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,7 +28,7 @@ public class FromJsonService {
                 .stream()
                 .map(entry -> {
                     try {
-                        Field declaredField = clazz.getDeclaredField(entry.getKey());
+                        Field declaredField = clazz.getDeclaredField(entry.getKey().replace("\"", ""));
                         Object parsedObject = getParsedObject(entry.getValue(), declaredField);
                         declaredField.setAccessible(true);
                         declaredField.set(object, parsedObject);
@@ -42,35 +42,175 @@ public class FromJsonService {
         return finalObject;
     }
 
-    private Map<String, String> executeMapOfFieldsNameAndValue(String json) {
-        return json.lines()
-                .map(s -> getParsedJsonByPattern(json))
-                .flatMap(Collection::stream)
-                .map(s -> s.replace("\"", ""))
-                .map(s -> s.endsWith(",") ? s.replace(",", "") : s)
-                .map(s -> s.split(":", 2))
-                .collect(Collectors.toMap(
-                        strings -> strings[0],
-                        strings -> strings[1],
-                        (v1, v2) -> v2,
-                        LinkedHashMap::new
-                ));
+    private Map<String, String> executeMapOfFieldsNameAndValue(String inJson) {
+
+        String json = inJson.substring(1, inJson.length() - 1);
+        Map<String, String> keyValueFields = new LinkedHashMap<>();
+        String key;
+        String value = null;
+
+        while (!json.isEmpty()) {
+            key = getKey(json);
+            json = json.substring(key.length() + 1);
+            if (isNull(json)) {
+                value = "null";
+            }else if (isBoolean(json.charAt(0))) {
+                value = getBoolean(json);
+            } else if (isObject(json.charAt(0))) {
+                value = getObject(json);
+            } else if (isNumber(json.charAt(0))) {
+                value = getNumber(json);
+            } else if (isString(json.charAt(0))) {
+                value = getString(json);
+            } else if (isArray(json.charAt(0))) {
+                value = getArray(json);
+            }
+            int valueLength = value.length() + 1;
+            if (json.length() <= valueLength) {
+                json = "";
+            } else {
+                json = json.substring(value.length() + 1);
+            }
+            keyValueFields.put(createNameField(key), createValueField(value));
+        }
+        System.out.println(keyValueFields);
+        return keyValueFields;
     }
 
-    private List<String> getParsedJsonByPattern(String json) {
+    private String createNameField(String line) {
+        return line.replace("\"", "");
+    }
 
-        List<String> keyValueList = new ArrayList<>();
-        Pattern pattern = Pattern
-                .compile("((?=\\[)\\[[^]]*]|(?=\\{)\\{[^}]*}|\"[^\"]*\"|(?=\\d)\\d*.\\d*|(?=\\w)\\w*)" +
-                        ":+((?=\\[)\\[[^]]*]|(?=\\{)\\{[^}]*}|\"[^\"]*\"|(?=\\d)\\d*.\\d*|(?=\\w)\\w*)");
-        Matcher matcher = pattern.matcher(json);
-        while (matcher.find()) {
-            keyValueList.add(matcher.group());
+    private String createValueField(String line) {
+
+        if (line.startsWith("\"") && line.endsWith("\"") && !line.contains("{") && !line.contains("[")) {
+            return line.replace("\"", "");
+        } else {
+            return line;
         }
-        return keyValueList;
+    }
+
+    private String getKey(String json) {
+
+        StringBuilder builder = new StringBuilder();
+        int counter = 0;
+        for (char c : json.toCharArray()) {
+            if (counter == 2) {
+                break;
+            }
+            builder.append(c);
+            if (c == '"') counter++;
+        }
+        return builder.toString();
+    }
+
+    private boolean isNull(String json) {
+        return json.contains("null");
+    }
+
+    private String getBoolean(String json) {
+
+        if (json.startsWith("true")) {
+            return "true";
+        } else if (json.startsWith("false")) {
+            return "false";
+        } else {
+            throw new CreateObjectException("Должен быть true или false!");
+        }
+    }
+
+    private String getNumber(String json) {
+
+        if (json == null) throw new CreateObjectException("Не должен быть null!");
+        int i = 0;
+        while (i < json.length() && (Character.isDigit(json.charAt(i)) || json.charAt(i) == '.')) {
+            i++;
+        }
+        return json.substring(0, i);
+    }
+
+    private String getObject(String json) {
+
+        if ("null".equals(json)) return "null";
+        if (json == null || !json.startsWith("{")) throw new CreateObjectException("Ваши данные не верны: " + json);
+        final StringBuilder builder = new StringBuilder();
+        int counter = 0;
+        for (char c : json.toCharArray()) {
+            if (c == '{') counter++;
+            if (c == '}') counter--;
+            builder.append(c);
+            if (counter == 0) break;
+        }
+        return builder.toString();
+    }
+
+    private String getString(String json) {
+
+        String result;
+        try {
+            result = getStringValue(json);
+        } catch (CreateObjectException e) {
+            result = getCharacterValue(json);
+        }
+        return result;
+    }
+
+    public String getCharacterValue(String json) {
+
+        if (json == null) throw new CreateObjectException("Не должен быть null!");
+        if (json.length() == 1 && Character.isDefined(json.charAt(0))) {
+            return json;
+        } else {
+            throw new CreateObjectException("Ваши данные не верны!");
+        }
+    }
+
+    public String getStringValue(String json) {
+
+        if (json == null) throw new CreateObjectException("Не должен быть null!");
+        Pattern stringPattern = Pattern.compile("\"([^\"]*(\"{2})?[^\"]*)*\"");
+        return stringPattern.matcher(json)
+                .results()
+                .map(MatchResult::group)
+                .findFirst()
+                .orElseThrow(() -> new CreateObjectException("Format error: " + json));
+    }
+
+    private String getArray(String json) {
+
+        int brackets = (int) json.chars().takeWhile(c -> c == '[').count();
+        if (brackets < 1) throw new CreateObjectException("Brackets must be 1 or more");
+        String arrayFormat = String.format("(\\[{%d}).+?(]{%d})", brackets, brackets);
+        Pattern arrayPattern = Pattern.compile(arrayFormat);
+        return arrayPattern.matcher(json)
+                .results()
+                .map(MatchResult::group)
+                .findFirst()
+                .orElseThrow(() -> new CreateObjectException("Format error: " + json));
+    }
+
+    private boolean isBoolean(char ch) {
+        return ch == 't' || ch == 'f';
+    }
+
+    private boolean isNumber(char ch) {
+        return ch >= '0' && ch <= '9' || ch == '-';
+    }
+
+    private boolean isString(char ch) {
+        return ch == '"';
+    }
+
+    private boolean isArray(char ch) {
+        return ch == '[';
+    }
+
+    private boolean isObject(char ch) {
+        return ch == '{';
     }
 
     private Object getNewInstanceOfConstructor(Class<?> clazz) {
+
         Object object;
         try {
             Constructor<?> constructor = clazz.getDeclaredConstructor();
@@ -120,7 +260,7 @@ public class FromJsonService {
             return getParsedUUID(value);
         } else if (type.equals(LocalDate.class)) {
             return getParsedLocalDate(value);
-        } else if (type.equals(OffsetDateTime.class)) {
+        } else if (type.equals(OffsetDateTime.class) || type.getName().startsWith("java.time.OffsetDateTime")) {
             return getParsedOffsetDateTime(value);
         } else {
             return toObject(value, type);
@@ -148,7 +288,7 @@ public class FromJsonService {
         return LocalDate.parse(value);
     }
 
-    private OffsetDateTime getParsedOffsetDateTime(String value){
+    private OffsetDateTime getParsedOffsetDateTime(String value) {
         return OffsetDateTime.parse(value);
     }
 

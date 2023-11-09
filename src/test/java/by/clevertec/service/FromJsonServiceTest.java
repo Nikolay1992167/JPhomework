@@ -1,9 +1,6 @@
 package by.clevertec.service;
 
-import by.clevertec.dateformat.LocalDateDeserializer;
-import by.clevertec.dateformat.LocalDateSerializer;
-import by.clevertec.dateformat.OffsetDateTimeDeserializer;
-import by.clevertec.dateformat.OffsetDateTimeSerializer;
+import by.clevertec.dateformat.*;
 import by.clevertec.entity.Auction;
 import by.clevertec.entity.Car;
 import by.clevertec.entity.Person;
@@ -37,10 +34,8 @@ class FromJsonServiceTest {
     @BeforeEach
     void setUp() {
         gson = new GsonBuilder()
-                .registerTypeAdapter(LocalDate.class, new LocalDateSerializer())
-                .registerTypeAdapter(LocalDate.class, new LocalDateDeserializer())
-                .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeSerializer())
-                .registerTypeAdapter(OffsetDateTimeDeserializer.class, new OffsetDateTimeDeserializer())
+                .registerTypeAdapter(LocalDate.class, new LocalDateTypeAdapter())
+                .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeTypeAdapter())
                 .create();
         jsonSerializable = new JsonSerializableImpl(fromJsonService, toJsonService);
     }
@@ -53,7 +48,7 @@ class FromJsonServiceTest {
         Auction expected = gson.fromJson(jsonLine, Auction.class);
 
         // when
-        Auction actual = (Auction) fromJsonService.toObject(jsonLine, Auction.class);
+        Auction actual = (Auction) jsonSerializable.fromJson(jsonLine, Auction.class);
 
         // then
         assertThat(actual).isEqualTo(expected);
@@ -67,7 +62,7 @@ class FromJsonServiceTest {
         Car expected = gson.fromJson(jsonLine, Car.class);
 
         // when
-        Car actual = (Car) fromJsonService.toObject(jsonLine, Car.class);
+        Car actual = (Car) jsonSerializable.fromJson(jsonLine, Car.class);
 
         //then
         assertThat(actual).isEqualTo(expected);
@@ -81,7 +76,7 @@ class FromJsonServiceTest {
         Person expected = gson.fromJson(jsonLine, Person.class);
 
         // when
-        Person actual = (Person) fromJsonService.toObject(jsonLine, Person.class);
+        Person actual = (Person) jsonSerializable.fromJson(jsonLine, Person.class);
 
         // then
         assertThat(actual).isEqualTo(expected);
@@ -92,10 +87,11 @@ class FromJsonServiceTest {
         // given
         Transaction transaction = TransactionTestData.builder().build().buildTransaction();
         String jsonLine = toJsonService.toJson(transaction);
+
         Transaction expected = gson.fromJson(jsonLine, Transaction.class);
 
         // when
-        Transaction actual = (Transaction) fromJsonService.toObject(jsonLine, Transaction.class);
+        Transaction actual = (Transaction) jsonSerializable.fromJson(jsonLine, Transaction.class);
 
         // then
         assertThat(actual).isEqualTo(expected);

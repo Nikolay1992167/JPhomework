@@ -1,9 +1,7 @@
 package by.clevertec.service;
 
-import by.clevertec.dateformat.LocalDateDeserializer;
-import by.clevertec.dateformat.LocalDateSerializer;
-import by.clevertec.dateformat.OffsetDateTimeDeserializer;
-import by.clevertec.dateformat.OffsetDateTimeSerializer;
+import by.clevertec.dateformat.LocalDateTypeAdapter;
+import by.clevertec.dateformat.OffsetDateTimeTypeAdapter;
 import by.clevertec.entity.Auction;
 import by.clevertec.entity.Car;
 import by.clevertec.entity.Person;
@@ -19,7 +17,6 @@ import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -38,13 +35,12 @@ class ToJsonServiceTest {
     @BeforeEach
     void setUp() {
         gson = new GsonBuilder()
-                .registerTypeAdapter(LocalDate.class, new LocalDateSerializer())
-                .registerTypeAdapter(LocalDate.class, new LocalDateDeserializer())
-                .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeSerializer())
-                .registerTypeAdapter(OffsetDateTimeDeserializer.class, new OffsetDateTimeDeserializer())
+                .registerTypeAdapter(LocalDate.class, new LocalDateTypeAdapter())
+                .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeTypeAdapter())
                 .create();
         jsonSerializable = new JsonSerializableImpl(fromJsonService, toJsonService);
     }
+
     @Test
     void shouldReturnJsonLineForCar() {
         // given
@@ -52,46 +48,46 @@ class ToJsonServiceTest {
         String expected = gson.toJson(car);
 
         // when
-        String actual = toJsonService.toJson(car);
+        String actual = jsonSerializable.toJson(car);
 
         // then
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    void shouldReturnJsonLineForAuction(){
+    void shouldReturnJsonLineForAuction() {
         // given
         Auction auction = AuctionTestData.builder().build().buildAuction();
         String expected = gson.toJson(auction);
 
         // when
-        String actual = toJsonService.toJson(auction);
+        String actual = jsonSerializable.toJson(auction);
 
         // then
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    void shouldReturnJsonLineForPerson(){
+    void shouldReturnJsonLineForPerson() {
         // given
         Person person = PersonTestData.builder().build().buildPerson();
         String expected = gson.toJson(person);
 
         // when
-        String actual = toJsonService.toJson(person);
+        String actual = jsonSerializable.toJson(person);
 
         // then
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    void shouldReturnJsonLineTransaction(){
+    void shouldReturnJsonLineTransaction() {
         // given
         Transaction transaction = TransactionTestData.builder().build().buildTransaction();
         String expected = toJsonService.toJson(transaction);
 
         // when
-        String actual = toJsonService.toJson(transaction);
+        String actual = jsonSerializable.toJson(transaction);
 
         // then
         assertThat(actual).isEqualTo(expected);
