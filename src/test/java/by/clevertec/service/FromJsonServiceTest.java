@@ -1,6 +1,7 @@
 package by.clevertec.service;
 
-import by.clevertec.dateformat.*;
+import by.clevertec.dateformat.LocalDateTypeAdapter;
+import by.clevertec.dateformat.OffsetDateTimeTypeAdapter;
 import by.clevertec.entity.Auction;
 import by.clevertec.entity.Car;
 import by.clevertec.entity.Person;
@@ -87,7 +88,6 @@ class FromJsonServiceTest {
         // given
         Transaction transaction = TransactionTestData.builder().build().buildTransaction();
         String jsonLine = toJsonService.toJson(transaction);
-
         Transaction expected = gson.fromJson(jsonLine, Transaction.class);
 
         // when

@@ -62,6 +62,7 @@ class ToJsonServiceTest {
 
         // when
         String actual = jsonSerializable.toJson(auction);
+        System.out.println(actual);
 
         // then
         assertThat(actual).isEqualTo(expected);
@@ -81,7 +82,7 @@ class ToJsonServiceTest {
     }
 
     @Test
-    void shouldReturnJsonLineTransaction() {
+    void shouldReturnJsonLineForTransaction() {
         // given
         Transaction transaction = TransactionTestData.builder().build().buildTransaction();
         String expected = toJsonService.toJson(transaction);

@@ -23,17 +23,11 @@ public class AuctionTestData {
     @Builder.Default
     private List<Car> cars = FIRST_LIST_OF_CAR;
     @Builder.Default
-    private double[] prices = AUCTION_PRICES;
-    @Builder.Default
     private Set<Person> people = AUCTION_PEOPLE;
     @Builder.Default
-    private Map<Integer, List<Car>> mapListOfCar = MAP_LIST_OF_CAR;
-    @Builder.Default
-    private List<Map<Integer, Car>> listMapOfCar = LIST_MAP_OF_CAR;
-    @Builder.Default
-    private Map<Integer, Map<String, Car>> mapForBrochure = MAP_FOR_BROSHURE;
+    private Map<String, Integer> mapListOfCar = MAP_LIST_OF_CAR;
 
     public Auction buildAuction(){
-        return new Auction(id, name, dateEvent, cars, prices, people, mapListOfCar, listMapOfCar, mapForBrochure);
+        return new Auction(id, name, dateEvent, cars, people, mapListOfCar);
     }
 }

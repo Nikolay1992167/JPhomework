@@ -3,10 +3,7 @@ package by.clevertec.service;
 import by.clevertec.exception.CreateObjectException;
 import by.clevertec.exception.NotFoundException;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
@@ -17,8 +14,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class FromJsonService {
-
+public class FromJsonService<T> {
     public Object toObject(String json, Class<?> clazz) {
 
         Map<String, String> jsonMap = executeMapOfFieldsNameAndValue(json);
@@ -29,8 +25,8 @@ public class FromJsonService {
                 .map(entry -> {
                     try {
                         Field declaredField = clazz.getDeclaredField(entry.getKey().replace("\"", ""));
-                        Object parsedObject = getParsedObject(entry.getValue(), declaredField);
                         declaredField.setAccessible(true);
+                        Object parsedObject = getParsedObject(entry.getValue(), declaredField);
                         declaredField.set(object, parsedObject);
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         throw new NotFoundException("Поле не существует!");
@@ -44,17 +40,22 @@ public class FromJsonService {
 
     private Map<String, String> executeMapOfFieldsNameAndValue(String inJson) {
 
-        String json = inJson.substring(1, inJson.length() - 1);
+        String json = null;
+        if (isNumber(inJson.charAt(0))) {
+            json = inJson;
+        }
+        if (inJson.charAt(0) == '{') {
+            json = inJson.substring(1, inJson.length() - 1);
+        }
         Map<String, String> keyValueFields = new LinkedHashMap<>();
         String key;
         String value = null;
-
         while (!json.isEmpty()) {
             key = getKey(json);
             json = json.substring(key.length() + 1);
             if (isNull(json)) {
                 value = "null";
-            }else if (isBoolean(json.charAt(0))) {
+            } else if (isBoolean(json.charAt(0))) {
                 value = getBoolean(json);
             } else if (isObject(json.charAt(0))) {
                 value = getObject(json);
@@ -73,7 +74,6 @@ public class FromJsonService {
             }
             keyValueFields.put(createNameField(key), createValueField(value));
         }
-        System.out.println(keyValueFields);
         return keyValueFields;
     }
 
@@ -157,12 +157,12 @@ public class FromJsonService {
 
     public String getCharacterValue(String json) {
 
-        if (json == null) throw new CreateObjectException("Не должен быть null!");
-        if (json.length() == 1 && Character.isDefined(json.charAt(0))) {
-            return json;
-        } else {
-            throw new CreateObjectException("Ваши данные не верны!");
-        }
+        Pattern charPattern = Pattern.compile("([0-9]{1,5}|\"\\\\[uU][0-9a-fA-F]{4}\"|\"?null\"?|\"\\\\[bfnrt\"]\"|\".\")");
+        return charPattern.matcher(json)
+                .results()
+                .map(MatchResult::group)
+                .findFirst()
+                .orElseThrow(() -> new CreateObjectException("Ошибка данных: " + json));
     }
 
     public String getStringValue(String json) {
@@ -173,20 +173,27 @@ public class FromJsonService {
                 .results()
                 .map(MatchResult::group)
                 .findFirst()
-                .orElseThrow(() -> new CreateObjectException("Format error: " + json));
+                .orElseThrow(() -> new CreateObjectException("Ошибка данных: " + json));
     }
 
-    private String getArray(String json) {
-
-        int brackets = (int) json.chars().takeWhile(c -> c == '[').count();
-        if (brackets < 1) throw new CreateObjectException("Brackets must be 1 or more");
-        String arrayFormat = String.format("(\\[{%d}).+?(]{%d})", brackets, brackets);
-        Pattern arrayPattern = Pattern.compile(arrayFormat);
-        return arrayPattern.matcher(json)
-                .results()
-                .map(MatchResult::group)
-                .findFirst()
-                .orElseThrow(() -> new CreateObjectException("Format error: " + json));
+    private static String getArray(String json) {
+        int start = -1;
+        int brackets = 0;
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (c == '[') {
+                if (brackets == 0) {
+                    start = i;
+                }
+                brackets++;
+            } else if (c == ']') {
+                brackets--;
+                if (brackets == 0) {
+                    return json.substring(start, i + 1);
+                }
+            }
+        }
+        throw new CreateObjectException("Ошибка данных: " + json);
     }
 
     private boolean isBoolean(char ch) {
@@ -199,6 +206,10 @@ public class FromJsonService {
 
     private boolean isString(char ch) {
         return ch == '"';
+    }
+
+    private boolean isUUID(String str) {
+        return str.matches("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
     }
 
     private boolean isArray(char ch) {
@@ -240,22 +251,13 @@ public class FromJsonService {
         } else if (type.isEnum()) {
             return getParsedEnum(value, declaredField);
         } else if (type.isArray()) {
-            Object[] objects = value.lines()
-                    .map(s -> s.replace("[", ""))
-                    .map(s -> s.replace("]", ""))
-                    .map(s -> s.split(","))
-                    .flatMap(Arrays::stream)
-                    .toArray();
-            if (type.getSimpleName().startsWith("double")) {
-                return Arrays.stream(objects)
-                        .mapToDouble(s -> Double.parseDouble((String) s))
-                        .toArray();
-            } else if (type.getSimpleName().startsWith("long")) {
-                return Arrays.stream(objects)
-                        .mapToLong(s -> Long.parseLong((String) s))
-                        .toArray();
+            Class<?> arrayType = declaredField.getType().getComponentType();
+            String[] jsonArray = value.substring(1, value.length() - 1).split(",(?=\\{)");
+            Object array = Array.newInstance(arrayType, jsonArray.length);
+            for (int i = 0; i < jsonArray.length; i++) {
+                Array.set(array, i, toObject(jsonArray[i], arrayType));
             }
-            return objects;
+            return array;
         } else if (type.equals(UUID.class)) {
             return getParsedUUID(value);
         } else if (type.equals(LocalDate.class)) {
@@ -293,11 +295,20 @@ public class FromJsonService {
     }
 
     private LinkedHashMap<Object, String> getParsedMap(String value, Field declaredField) {
+        if (value.matches(".*\\{.*\\{.*\\}.*\\}.*")) {
+            return getParsedNestedMap(value, declaredField);
+        } else {
+            return getParsedSimpleMap(value, declaredField);
+        }
+    }
+
+    private LinkedHashMap<Object, String> getParsedSimpleMap(String value, Field declaredField) {
         return value.lines()
                 .map(s -> s.replace("{", ""))
                 .map(s -> s.replace("}", ""))
                 .map(s -> s.split(","))
                 .flatMap(Arrays::stream)
+                .map(s -> s.replace("\"", ""))
                 .map(s -> s.split(":"))
                 .collect(Collectors.toMap(
                         strings -> getParsedGeneric(declaredField, strings[0]),
@@ -307,8 +318,19 @@ public class FromJsonService {
                 ));
     }
 
-    private Collection<Object> getParsedCollection(String value, Field declaredField) {
+    private LinkedHashMap<Object, String> getParsedNestedMap(String value, Field declaredField) {
+        return value.lines()
+                .map(s -> s.substring(1, s.length() - 1))
+                .map(s -> s.split(":", 2))
+                .collect(Collectors.toMap(
+                        strings -> getParsedGeneric(declaredField, strings[0].replace("\"", "")),
+                        strings -> strings[1],
+                        (v1, v2) -> v2,
+                        LinkedHashMap::new
+                ));
+    }
 
+    private Collection<Object> getParsedCollection(String value, Field declaredField) {
         Class<?> type = declaredField.getType();
         if (type.getName().startsWith("java.util.List")) {
             return getParsedCollectionStream(value, declaredField)
@@ -324,7 +346,13 @@ public class FromJsonService {
         return value.lines()
                 .map(s -> s.replace("[", ""))
                 .map(s -> s.replace("]", ""))
-                .map(s -> s.split(","))
+                .map(s -> {
+                    if (s.startsWith("{")) {
+                        return s.split("(?<=\\}),(?=\\{)");
+                    } else {
+                        return s.split(",");
+                    }
+                })
                 .flatMap(Arrays::stream)
                 .map(s -> getParsedGeneric(declaredField, s));
     }

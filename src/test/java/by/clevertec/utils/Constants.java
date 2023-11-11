@@ -61,6 +61,7 @@ public class Constants {
                     44400.0
             )
     );
+    public static final List<List<Car>> LISTOF = List.of(FIRST_LIST_OF_CAR, SECOND_LIST_OF_CAR);
     public static final double[] AUCTION_PRICES = new double[]{10000.0, 20000.0, 30000.0};
     public static final Set<Person> AUCTION_PEOPLE = Set.of(
             new Person(
@@ -80,29 +81,11 @@ public class Constants {
                     Status.BUYER
             )
     );
-    public static final Map<Integer, List<Car>> MAP_LIST_OF_CAR = Map.of(
-            1, FIRST_LIST_OF_CAR,
-            2, SECOND_LIST_OF_CAR
+    public static final Map<String, Integer> MAP_LIST_OF_CAR = Map.of(
+            "VW", 45000,
+            "Ford", 30000,
+            "Audi", 70000
     );
-    public static final List<Map<Integer, Car>> LIST_MAP_OF_CAR = List.of(
-            Map.of(
-                    1, FIRST_LIST_OF_CAR.get(0),
-                    2, FIRST_LIST_OF_CAR.get(1)
-            ),
-            Map.of(
-                    1, SECOND_LIST_OF_CAR.get(0),
-                    2, SECOND_LIST_OF_CAR.get(1)
-            )
-    );
-    public static final Map<Integer, Map<String, Car>> MAP_FOR_BROSHURE = Map.of(
-            5, Map.of(
-                    "Family", FIRST_LIST_OF_CAR.get(0),
-                    "Young", FIRST_LIST_OF_CAR.get(1)
-            ),
-            9, Map.of(
-                    "Business", SECOND_LIST_OF_CAR.get(0),
-                    "Rich", SECOND_LIST_OF_CAR.get(1)
-            ));
     public static final UUID PERSON_ID = UUID.fromString("39f9dd57-25f7-4d21-b598-0d50dd4067f8");
     public static final String PERSON_FIRST_NAME = "Евгений";
     public static final String PERSON_LAST_NAME = "Лопушков";
@@ -120,5 +103,4 @@ public class Constants {
     public static final Map<String, Car[]> MAP_OF_CARS = Map.of(
             "Germany", TRANSACTION_CARS
     );
-    public static final String TEST_JSON_LINE = "{\"id\":\"c98b79e8-7838-41f9-a420-fa7c9dc0961e\",\"brand\":\"Toyota\",\"model\":\"RAV4\",\"dateProduction\":\"2023-12-15\",\"type\":\"WAGON\",\"price\":12000.0}";
 }
