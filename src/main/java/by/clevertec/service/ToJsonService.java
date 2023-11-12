@@ -39,7 +39,7 @@ public class ToJsonService {
         return removeLastComma(json);
     }
 
-    private Map<String, Object> executeMapOfFieldsNameAndValue(Object object, Field[] declaredFields) {
+    Map<String, Object> executeMapOfFieldsNameAndValue(Object object, Field[] declaredFields) {
         return Arrays.stream(declaredFields)
                 .collect(Collectors.toMap(
                         Field::getName,

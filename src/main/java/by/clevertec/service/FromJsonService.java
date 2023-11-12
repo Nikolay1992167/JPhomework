@@ -14,13 +14,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class FromJsonService<T> {
+public class FromJsonService{
     public Object toObject(String json, Class<?> clazz) {
 
         Map<String, String> jsonMap = executeMapOfFieldsNameAndValue(json);
         Object object = getNewInstanceOfConstructor(clazz);
 
-        Object finalObject = jsonMap.entrySet()
+        return jsonMap.entrySet()
                 .stream()
                 .map(entry -> {
                     try {
@@ -35,7 +35,6 @@ public class FromJsonService<T> {
                 })
                 .reduce((o, o2) -> o2)
                 .orElseThrow(() -> new CreateObjectException("Произошла ошибка формирования объекта!"));
-        return finalObject;
     }
 
     private Map<String, String> executeMapOfFieldsNameAndValue(String inJson) {
@@ -206,10 +205,6 @@ public class FromJsonService<T> {
 
     private boolean isString(char ch) {
         return ch == '"';
-    }
-
-    private boolean isUUID(String str) {
-        return str.matches("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
     }
 
     private boolean isArray(char ch) {

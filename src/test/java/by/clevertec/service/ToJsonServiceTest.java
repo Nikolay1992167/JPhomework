@@ -62,7 +62,6 @@ class ToJsonServiceTest {
 
         // when
         String actual = jsonSerializable.toJson(auction);
-        System.out.println(actual);
 
         // then
         assertThat(actual).isEqualTo(expected);

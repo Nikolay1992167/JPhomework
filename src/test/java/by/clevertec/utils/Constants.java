@@ -61,8 +61,6 @@ public class Constants {
                     44400.0
             )
     );
-    public static final List<List<Car>> LISTOF = List.of(FIRST_LIST_OF_CAR, SECOND_LIST_OF_CAR);
-    public static final double[] AUCTION_PRICES = new double[]{10000.0, 20000.0, 30000.0};
     public static final Set<Person> AUCTION_PEOPLE = Set.of(
             new Person(
                     UUID.fromString("221f4ccb-2ab8-41da-a71e-6d67b9e59a84"),
